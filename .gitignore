@@ -1,0 +1,11 @@
+files/
+
+frontend/.next
+frontend/node_modules
+
+lambdas/**/*/node_modules/
+
+terraform/.terraform
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/values.tfvars
