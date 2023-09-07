@@ -42,7 +42,7 @@ resource "aws_cognito_user" "default_user" {
   user_pool_id             = aws_cognito_user_pool.user_pool.id
   username                 = "admin"
   desired_delivery_mediums = ["EMAIL"]
-  temporary_password       = "Admin@123"
+  password                 = "Admin@123"
   enabled                  = true
   message_action           = "SUPPRESS"
 

@@ -11,14 +11,14 @@ resource "aws_api_gateway_rest_api" "api" {
       securitySchemes = {
         authorizer = {
           type                         = "apiKey"
-          name                         = "${var.env}${title(var.service_name)}UserAuthorizer"
+          name                         = "Authorization"
           in                           = "header"
           description                  = "Cognito User Pool Authorization"
           x-amazon-apigateway-authtype = "cognito_user_pools"
           x-amazon-apigateway-authorizer = {
             type                  = "cognito_user_pools"
             authorizerUri         = aws_lambda_function.api_authorizer.invoke_arn
-            authorizerCredentials = aws_iam_role.api_auth_role.arn
+            authorizerCredentials = aws_iam_role.api_authorizer_role.arn
             identitySource        = "method.request.header.Authorization"
             providerARNs          = [aws_cognito_user_pool.user_pool.arn]
           }
@@ -84,7 +84,7 @@ resource "aws_api_gateway_rest_api" "api" {
             uri                  = aws_lambda_function.customers["UpdateCustomer"].invoke_arn
           }
         }
-      },
+      }
       "/v1/customers/{id}/attach-service" = {
         post = {
           security = [{
@@ -95,6 +95,16 @@ resource "aws_api_gateway_rest_api" "api" {
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
             uri                  = aws_lambda_function.customers["AttachServiceToCustomer"].invoke_arn
+          }
+        }
+      }
+      "/v1/login" = {
+        post = {
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.auth_login.invoke_arn
           }
         }
       }

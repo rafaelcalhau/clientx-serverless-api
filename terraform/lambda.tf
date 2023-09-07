@@ -4,6 +4,12 @@ data "archive_file" "authorizer" {
   type        = "zip"
 }
 
+data "archive_file" "auth_login" {
+  output_path = "files/auth_login.zip"
+  source_file = "${local.lambdas_path}/auth/login.js"
+  type        = "zip"
+}
+
 data "archive_file" "customers" {
   for_each = local.lambdas.customers
 
@@ -116,9 +122,48 @@ resource "aws_lambda_function" "customers" {
   }
 }
 
+resource "aws_lambda_function" "auth_login" {
+  function_name = "${local.lambdas_prefix}Login"
+  handler       = "login.handler"
+  description   = "User authentication"
+  role          = aws_iam_role.lambda_authentication_role.arn
+  runtime       = "nodejs16.x"
+
+  filename         = data.archive_file.auth_login.output_path
+  source_code_hash = data.archive_file.auth_login.output_base64sha256
+
+  timeout     = 15
+  memory_size = 128
+
+  layers = [
+    aws_lambda_layer_version.sentry.arn,
+    aws_lambda_layer_version.utils.arn
+  ]
+
+  // Enabling CloudWatch X-Ray
+  tracing_config {
+    mode = "Active"
+  }
+
+  environment {
+    variables = {
+      COGNITO_USER_POOL_ID      = aws_cognito_user_pool.user_pool.id
+      COGNITO_APP_CLIENT_ID     = aws_cognito_user_pool_client.user_pool_client.id
+      DEBUG                     = var.env == "dev"
+      SENTRY_ENABLED            = false
+      SENTRY_DSN                = ""
+      SENTRY_TRACES_SAMPLE_RATE = 0.1
+    }
+  }
+
+  tags = {
+    project = var.service_name
+  }
+}
+
 resource "aws_lambda_function" "api_authorizer" {
   function_name = "${local.lambdas_prefix}ApiAuthorizer"
-  handler       = "ApiAuthorizer.handler"
+  handler       = "apiAuthorizer.handler"
   description   = "Manage authorization of private endpoint requests"
   role          = aws_iam_role.lambda_role.arn
   runtime       = "nodejs16.x"
@@ -169,7 +214,15 @@ resource "aws_lambda_permission" "lambda_permission" {
   source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }
 
-resource "aws_lambda_permission" "authorizer_lambda_permission" {
+resource "aws_lambda_permission" "lambda_authentication_permission" {
+  statement_id  = "InvokeFunctionToAPILambdaAuthentication"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.auth_login.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
+}
+
+resource "aws_lambda_permission" "lambda_api_authorizer_permission" {
   statement_id  = "InvokeFunctionToAPILambdaAuthorizer"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api_authorizer.function_name

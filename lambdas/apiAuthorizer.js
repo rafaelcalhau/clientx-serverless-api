@@ -24,7 +24,6 @@ const generatePolicy = (principalId, effect, resource) => ({
 exports.handler = async (event, context) => {
   // Get the authorization token from the request headers
   const authToken = event.headers.Authorization;
-  console.log({ authToken });
   if (!authToken) {
     return generatePolicy('user', 'Deny', event.methodArn);
   }
