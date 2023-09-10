@@ -26,18 +26,18 @@ const handler = async (event, context) => {
 
     if (pathParameters?.id) {
         try {
-            const customer = await mongoClient
-                .collection("customers")
+            const client = await mongoClient
+                .collection("clients")
                 .findOne({ _id: new ObjectId(pathParameters.id) });
 
             if (debugEnabled) {
                 console.log({
-                    message: 'Customers has been fetched.',
-                    customer,
+                    message: 'Client data has been fetched.',
+                    client,
                 });
             }
     
-            return response(200, customer);
+            return response(200, client);
         } catch (err) {
             console.error(err);
             return response(500, {
@@ -46,17 +46,17 @@ const handler = async (event, context) => {
         }
     } else {
         try {
-            const customers = await mongoClient
-                .collection("customers")
+            const clients = await mongoClient
+                .collection("clients")
                 .find({})
                 .toArray();
     
             console.log({
-                message: 'Customers has been fecthed.',
-                customers,
+                message: 'Clients has been fecthed.',
+                clients,
             });
     
-            return response(200, customers);
+            return response(200, clients);
         } catch (err) {
             console.error(err);
             return response(500, {

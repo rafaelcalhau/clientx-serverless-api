@@ -1,10 +1,10 @@
 resource "aws_api_gateway_rest_api" "api" {
-  name = "CustomerX-API"
+  name = "ClientX-API"
 
   body = jsonencode({
     openapi = "3.0.1"
     info = {
-      title   = "CustomerX"
+      title   = "ClientX"
       version = "1.0"
     }
     components = {
@@ -26,7 +26,7 @@ resource "aws_api_gateway_rest_api" "api" {
       }
     }
     paths = {
-      "/v1/customers" = {
+      "/v1/clients" = {
         get = {
           security = [{
             authorizer = []
@@ -35,7 +35,7 @@ resource "aws_api_gateway_rest_api" "api" {
             httpMethod           = "POST"
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
-            uri                  = aws_lambda_function.customers["GetCustomers"].invoke_arn
+            uri                  = aws_lambda_function.clients["GetClients"].invoke_arn
           }
         }
         post = {
@@ -46,11 +46,11 @@ resource "aws_api_gateway_rest_api" "api" {
             httpMethod           = "POST"
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
-            uri                  = aws_lambda_function.customers["AddCustomer"].invoke_arn
+            uri                  = aws_lambda_function.clients["AddClient"].invoke_arn
           }
         }
       }
-      "/v1/customers/{id}" = {
+      "/v1/clients/{id}" = {
         delete = {
           security = [{
             authorizer = []
@@ -59,7 +59,7 @@ resource "aws_api_gateway_rest_api" "api" {
             httpMethod           = "POST"
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
-            uri                  = aws_lambda_function.customers["DeleteCustomer"].invoke_arn
+            uri                  = aws_lambda_function.clients["DeleteClient"].invoke_arn
           }
         }
         get = {
@@ -70,7 +70,7 @@ resource "aws_api_gateway_rest_api" "api" {
             httpMethod           = "POST"
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
-            uri                  = aws_lambda_function.customers["GetCustomers"].invoke_arn
+            uri                  = aws_lambda_function.clients["GetClients"].invoke_arn
           },
         }
         put = {
@@ -81,11 +81,11 @@ resource "aws_api_gateway_rest_api" "api" {
             httpMethod           = "POST"
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
-            uri                  = aws_lambda_function.customers["UpdateCustomer"].invoke_arn
+            uri                  = aws_lambda_function.clients["UpdateClient"].invoke_arn
           }
         }
       }
-      "/v1/customers/{id}/attach-service" = {
+      "/v1/clients/{id}/attach-service" = {
         post = {
           security = [{
             authorizer = []
@@ -94,7 +94,7 @@ resource "aws_api_gateway_rest_api" "api" {
             httpMethod           = "POST"
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
-            uri                  = aws_lambda_function.customers["AttachServiceToCustomer"].invoke_arn
+            uri                  = aws_lambda_function.clients["AttachServiceToClient"].invoke_arn
           }
         }
       }
@@ -105,6 +105,19 @@ resource "aws_api_gateway_rest_api" "api" {
             payloadFormatVersion = "1.0"
             type                 = "AWS_PROXY"
             uri                  = aws_lambda_function.auth_login.invoke_arn
+          }
+        }
+      }
+      "/v1/verify-access-token" = {
+        get = {
+          security = [{
+            authorizer = []
+          }]
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.verify_access_token.invoke_arn
           }
         }
       }

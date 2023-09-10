@@ -10,34 +10,34 @@ locals {
   layers_path    = "${path.module}/../lambdas/layers"
 
   lambdas = {
-    customers : {
-      AddCustomer = {
-        name        = "${local.lambdas_prefix}AddCustomer"
-        description = "Add a new customer"
+    clients : {
+      AddClient = {
+        name        = "${local.lambdas_prefix}AddClient"
+        description = "Add a new client"
         memory      = 128
         timeout     = 15
       }
-      AttachServiceToCustomer = {
-        name        = "${local.lambdas_prefix}AttachServiceToCustomer"
-        description = "Attach a service to a customer"
+      AttachServiceToClient = {
+        name        = "${local.lambdas_prefix}AttachServiceToClient"
+        description = "Attach a service to a client"
         memory      = 128
         timeout     = 15
       }
-      DeleteCustomer = {
-        name        = "${local.lambdas_prefix}DeleteCustomer"
-        description = "Soft delete a customer"
+      DeleteClient = {
+        name        = "${local.lambdas_prefix}DeleteClient"
+        description = "Soft delete a client"
         memory      = 128
         timeout     = 15
       }
-      GetCustomers = {
-        name        = "${local.lambdas_prefix}GetCustomers"
-        description = "Get customers"
+      GetClients = {
+        name        = "${local.lambdas_prefix}GetClients"
+        description = "Get clients"
         memory      = 128
         timeout     = 15
       }
-      UpdateCustomer = {
-        name        = "${local.lambdas_prefix}UpdateCustomer"
-        description = "Update a customer"
+      UpdateClient = {
+        name        = "${local.lambdas_prefix}UpdateClient"
+        description = "Update a client"
         memory      = 128
         timeout     = 15
       }

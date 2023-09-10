@@ -10,11 +10,17 @@ data "archive_file" "auth_login" {
   type        = "zip"
 }
 
-data "archive_file" "customers" {
-  for_each = local.lambdas.customers
+data "archive_file" "clients" {
+  for_each = local.lambdas.clients
 
-  output_path = "files/customers${each.key}.zip"
-  source_file = "${local.lambdas_path}/customers/${each.key}.js"
+  output_path = "files/clients${each.key}.zip"
+  source_file = "${local.lambdas_path}/clients/${each.key}.js"
+  type        = "zip"
+}
+
+data "archive_file" "verify_access_token" {
+  output_path = "files/verify_access_token.zip"
+  source_file = "${local.lambdas_path}/auth/verifyAccessToken.js"
   type        = "zip"
 }
 
@@ -75,11 +81,11 @@ resource "aws_lambda_layer_version" "utils" {
 }
 
 /**
-* Module: Customers
+* Module: Clients
 */
 
-resource "aws_lambda_function" "customers" {
-  for_each = local.lambdas.customers
+resource "aws_lambda_function" "clients" {
+  for_each = local.lambdas.clients
 
   function_name = each.value["name"]
   handler       = "${each.key}.handler"
@@ -87,8 +93,8 @@ resource "aws_lambda_function" "customers" {
   role          = aws_iam_role.lambda_role.arn
   runtime       = "nodejs16.x"
 
-  filename         = data.archive_file.customers[each.key].output_path
-  source_code_hash = data.archive_file.customers[each.key].output_base64sha256
+  filename         = data.archive_file.clients[each.key].output_path
+  source_code_hash = data.archive_file.clients[each.key].output_base64sha256
 
   timeout     = each.value["timeout"]
   memory_size = each.value["memory"]
@@ -204,12 +210,45 @@ resource "aws_lambda_function" "api_authorizer" {
   }
 }
 
+resource "aws_lambda_function" "verify_access_token" {
+  function_name = "${local.lambdas_prefix}VerifyAccessToken"
+  handler       = "verifyAccessToken.handler"
+  description   = "Access Token Verification"
+  role          = aws_iam_role.lambda_role.arn
+  runtime       = "nodejs16.x"
+
+  filename         = data.archive_file.verify_access_token.output_path
+  source_code_hash = data.archive_file.verify_access_token.output_base64sha256
+
+  timeout     = 5
+  memory_size = 128
+
+  layers = [
+    aws_lambda_layer_version.utils.arn
+  ]
+
+  // Enabling CloudWatch X-Ray
+  tracing_config {
+    mode = "Active"
+  }
+
+  environment {
+    variables = {
+      DEBUG = var.env == "dev"
+    }
+  }
+
+  tags = {
+    project = var.service_name
+  }
+}
+
 resource "aws_lambda_permission" "lambda_permission" {
-  for_each = local.lambdas.customers
+  for_each = local.lambdas.clients
 
   statement_id  = "InvokeFunctionToAPILambdas"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.customers[each.key].function_name
+  function_name = aws_lambda_function.clients[each.key].function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }
@@ -226,6 +265,14 @@ resource "aws_lambda_permission" "lambda_api_authorizer_permission" {
   statement_id  = "InvokeFunctionToAPILambdaAuthorizer"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api_authorizer.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
+}
+
+resource "aws_lambda_permission" "lambda_verify_access_token_permission" {
+  statement_id  = "InvokeFunctionToAPILambdas"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.verify_access_token.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }
