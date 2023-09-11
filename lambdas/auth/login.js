@@ -40,6 +40,6 @@ exports.handler = async (event) => {
       refreshToken: AuthenticationResult.RefreshToken,
     });
   } catch (error) {
-    return response(500, { message: error.message });
+    return response(401, { message: error.message });
   }
 };
