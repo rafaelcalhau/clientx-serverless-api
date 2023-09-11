@@ -14,5 +14,5 @@ variable "aws_profile" {
 
 variable "service_name" {
   type    = string
-  default = "customerx"
+  default = "clientx"
 }

@@ -26,6 +26,69 @@ resource "aws_api_gateway_rest_api" "api" {
       }
     }
     paths = {
+      "/v1/{proxy+}" = {
+        options = {
+          x-amazon-apigateway-cors = {
+            allowOrigins     = ["*"]
+            allowCredentials = true
+            exposeHeaders = [
+              "x-apigateway-header",
+              "x-amz-date",
+              "content-type"
+            ]
+            maxAge       = 3600
+            allowMethods = ["*"]
+            allowHeaders = [
+              "x-apigateway-header",
+              "x-amz-date",
+              "content-type"
+            ]
+          }
+          x-amazon-apigateway-integration = {
+            httpMethod           = "OPTIONS"
+            payloadFormatVersion = "1.0"
+            type                 = "MOCK"
+            requestTemplates = {
+              "application/json" = "{\"statusCode\": 200}"
+            }
+            passthroughBehavior = "WHEN_NO_MATCH"
+            contentHandling     = "CONVERT_TO_TEXT"
+            timeoutInMillis     = 29000
+            responses = {
+              default = {
+                statusCode = 200
+                responseParameters = {
+                  "method.response.header.Access-Control-Allow-Headers" : "'*'"
+                  "method.response.header.Access-Control-Allow-Methods" : "'*'"
+                  "method.response.header.Access-Control-Allow-Origin" : "'*'"
+                }
+              }
+            }
+          }
+          responses = {
+            200 = {
+              description = "200 response"
+              headers = {
+                Access-Control-Allow-Headers = {
+                  schema = {
+                    type = "string"
+                  }
+                }
+                Access-Control-Allow-Methods = {
+                  schema = {
+                    type = "string"
+                  }
+                }
+                Access-Control-Allow-Origin = {
+                  schema = {
+                    type = "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
       "/v1/clients" = {
         get = {
           security = [{
