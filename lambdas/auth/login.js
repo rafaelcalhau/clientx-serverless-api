@@ -1,22 +1,28 @@
 const AWS = require('aws-sdk');
-const normalizeEvent = require('/opt/nodejs/normalizer');
 const response = require('/opt/nodejs/response');
+const normalizeEvent = require('/opt/nodejs/normalizer');
+const getMongoClient = require('/opt/nodejs/getMongoClient');
 
-const {
-  COGNITO_APP_CLIENT_ID,
-  DEBUG,
-} = process.env;
+const { COGNITO_APP_CLIENT_ID } = process.env;
 
 exports.handler = async (event) => {
   const { data } = normalizeEvent(event);
-  if (DEBUG) {
-    console.log({ data, event });
-  }
 
   try {
+    const mongoClient = await getMongoClient();
+    const admin = await mongoClient
+      .collection("admins")
+      .findOne({ email: data.username });
+
+    if (!admin) {
+      return response(404, {
+        message: "User not found."
+      });
+    }
+
     // Create an instance of the AWS Cognito IdentityServiceProvider
     const identityServiceProvider = new AWS.CognitoIdentityServiceProvider();
-    const { AuthenticationResult } = await new Promise((resolve, reject) => {
+    const authResult = await new Promise((resolve, reject) => {
       identityServiceProvider.initiateAuth({
         AuthFlow: "USER_PASSWORD_AUTH",
         AuthParameters: {
@@ -24,21 +30,26 @@ exports.handler = async (event) => {
           "USERNAME": data.username
         },
         ClientId: COGNITO_APP_CLIENT_ID
-      }, function (err, data) {
+      }, async function (err, data) {
         if (err) {
-          console.log({ auth: { err, stack: err.stack }});
-          reject(err); // an error occurred
+          console.error({ auth: { err, stack: err.stack }});
+          reject(err);
         } else {
-          resolve(data); // successful response
+          const { IdToken: accessToken, RefreshToken: refreshToken } = data.AuthenticationResult
+          const { _id, name, email } = admin
+
+          resolve({
+            id: _id.toString(),
+            email,
+            name,
+            accessToken,
+            refreshToken
+          });
         }
       })
     });
 
-    return response(200, {
-      // accessToken: AuthenticationResult.AccessToken,
-      accessToken: AuthenticationResult.IdToken,
-      refreshToken: AuthenticationResult.RefreshToken,
-    });
+    return response(200, authResult);
   } catch (error) {
     return response(401, { message: error.message });
   }

@@ -59,6 +59,19 @@ data "aws_iam_policy_document" "lambda_authentication_permissions_policy_doc" {
       "cognito-idp:*"
     ]
   }
+
+  statement {
+    sid    = "SsmGetParameters"
+    effect = "Allow"
+    resources = [
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${local.ssm_parameters.mongodb_username}",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${local.ssm_parameters.mongodb_password}",
+    ]
+    actions = [
+      "ssm:GetParameters",
+      "ssm:GetParameter",
+    ]
+  }
 }
 
 data "aws_iam_policy_document" "lambda_permissions_policy_doc" {

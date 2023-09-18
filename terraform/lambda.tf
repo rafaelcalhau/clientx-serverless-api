@@ -142,6 +142,7 @@ resource "aws_lambda_function" "auth_login" {
   memory_size = 128
 
   layers = [
+    aws_lambda_layer_version.mongodb.arn,
     aws_lambda_layer_version.sentry.arn,
     aws_lambda_layer_version.utils.arn
   ]
@@ -155,10 +156,14 @@ resource "aws_lambda_function" "auth_login" {
     variables = {
       COGNITO_USER_POOL_ID      = aws_cognito_user_pool.user_pool.id
       COGNITO_APP_CLIENT_ID     = aws_cognito_user_pool_client.user_pool_client.id
+      DB_CONNECTION_URI         = local.db_connection_uri
+      DB_NAME                   = local.db_name
       DEBUG                     = var.env == "dev"
       SENTRY_ENABLED            = false
       SENTRY_DSN                = ""
       SENTRY_TRACES_SAMPLE_RATE = 0.1
+      SSM_PARAMETER_DB_USERNAME = local.ssm_parameters.mongodb_username
+      SSM_PARAMETER_DB_PASSWORD = local.ssm_parameters.mongodb_password
     }
   }
 

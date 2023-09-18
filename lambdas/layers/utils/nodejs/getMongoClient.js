@@ -11,12 +11,14 @@ const {
   SSM_PARAMETER_DB_PASSWORD,
 } = process.env;
 
+const environment = DEBUG === "true" ? "dev" : "production";
+
 const getMongoClient = async () => {
   if (mongoClient) return mongoClient.db(DB_NAME);
 
   let dbUsername, dbPassword;
   const ssm = new AWS.SSM();
-  
+
   try {
     const ssmParameterDbUsername = await ssm.getParameter({ Name: SSM_PARAMETER_DB_USERNAME ?? '' }).promise();
     dbUsername = ssmParameterDbUsername?.Parameter.Value;
@@ -24,11 +26,10 @@ const getMongoClient = async () => {
     const ssmParameterDbPassword = await ssm.getParameter({ Name: SSM_PARAMETER_DB_PASSWORD ?? '' }).promise();
     dbPassword = ssmParameterDbPassword?.Parameter.Value;
   } catch (error) {
-    console.error(error);
+    console.error('@getMongoClient: ssmParameters', error);
   }
   
   return new Promise((resolve, reject) => {
-    const environment = DEBUG === "true" ? "dev" : "production";
     const mongoDbUri = `${(DB_CONNECTION_URI ?? '')
       .replace('<username>', dbUsername)
       .replace('<password>', dbPassword)}/${environment}`;
@@ -41,7 +42,7 @@ const getMongoClient = async () => {
 
       resolve(mongoClient.db(DB_NAME));
     } catch (error) {
-      console.log({ error, mongoDbUri })
+      console.error({ error, mongoDbUri })
       reject(error);
     }
   });

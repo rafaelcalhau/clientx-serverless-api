@@ -1,6 +1,6 @@
 locals {
   db_connection_uri = "mongodb+srv://<username>:<password>@cluster0.fv6iow2.mongodb.net/${var.env}"
-  db_name           = "customerx"
+  db_name           = "clientx"
 
   namespaced_service_name           = "${var.service_name}-${var.env}"
   namespaced_service_name_fn_prefix = replace("${var.service_name}-${title(var.env)}", "-", "")
