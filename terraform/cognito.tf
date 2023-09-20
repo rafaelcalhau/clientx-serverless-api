@@ -57,6 +57,6 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   name                          = "${var.env}${title(var.service_name)}UserPoolClient"
   explicit_auth_flows           = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   user_pool_id                  = aws_cognito_user_pool.user_pool.id
-  access_token_validity         = 24
+  id_token_validity             = 24
   prevent_user_existence_errors = "ENABLED"
 }
