@@ -48,6 +48,12 @@ data "archive_file" "utils_layer" {
   type        = "zip"
 }
 
+data "archive_file" "zod_layer" {
+  output_path = "files/zod-layer.zip"
+  source_dir  = "${local.layers_path}/zod"
+  type        = "zip"
+}
+
 resource "aws_lambda_layer_version" "jsonwebtoken" {
   layer_name          = "jsonwebtoken-layer"
   description         = "JSON Web Token"
@@ -80,6 +86,14 @@ resource "aws_lambda_layer_version" "utils" {
   compatible_runtimes = ["nodejs16.x"]
 }
 
+resource "aws_lambda_layer_version" "zod" {
+  layer_name          = "zod-layer"
+  description         = "Zod Schema Validation"
+  filename            = data.archive_file.zod_layer.output_path
+  source_code_hash    = data.archive_file.zod_layer.output_base64sha256
+  compatible_runtimes = ["nodejs16.x"]
+}
+
 /**
 * Module: Clients
 */
@@ -102,7 +116,8 @@ resource "aws_lambda_function" "clients" {
   layers = [
     aws_lambda_layer_version.mongodb.arn,
     aws_lambda_layer_version.sentry.arn,
-    aws_lambda_layer_version.utils.arn
+    aws_lambda_layer_version.utils.arn,
+    aws_lambda_layer_version.zod.arn
   ]
 
   // Enabling CloudWatch X-Ray
