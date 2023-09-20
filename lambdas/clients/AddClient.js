@@ -1,4 +1,6 @@
 const Sentry = require("@sentry/serverless");
+const { z, ZodError } = require("zod");
+const normalizeEvent = require('/opt/nodejs/normalizer');
 const response = require('/opt/nodejs/response');
 const getMongoClient = require('/opt/nodejs/getMongoClient');
 
@@ -15,11 +17,33 @@ const tracesSampleRate = typeof SENTRY_TRACES_SAMPLE_RATE === 'string'
     ? Number(SENTRY_TRACES_SAMPLE_RATE)
     : 0;
 
+const newClientDto = z.object({
+    name: z.string(),
+    email: z.string().email('Invalid email address.')
+})
+
 const handler = async (event, context) => {
     if (debugEnabled) console.log({ event });
 
-    // implement me
-    return response(200, { message: 'Not implemented.' });
+    try {
+        const mongoClient = await getMongoClient();
+        const { data } = normalizeEvent(event);
+        const doc = newClientDto.parse(data)
+        const newClient = await mongoClient
+            .collection("clients")
+            .insertOne({ ...doc, createdAt: new Date() })
+        if (debugEnabled) {
+            console.log(`Registered client ${doc.name} with id ${newClient.insertedId}.`)
+        }
+        return response(200, { success: true, _id: newClient.insertedId });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const message = error.issues.map(issue => issue.message)?.join('; ') ?? 'Data validation error.'
+            return response(500, { message });
+        }
+
+        return response(500, { message: error?.message ?? error });
+    }
 };
 
 if (useSentryAPM) {
