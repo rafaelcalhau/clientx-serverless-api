@@ -18,6 +18,14 @@ data "archive_file" "clients" {
   type        = "zip"
 }
 
+data "archive_file" "services" {
+  for_each = local.lambdas.services
+
+  output_path = "files/services${each.key}.zip"
+  source_file = "${local.lambdas_path}/services/${each.key}.js"
+  type        = "zip"
+}
+
 data "archive_file" "verify_access_token" {
   output_path = "files/verify_access_token.zip"
   source_file = "${local.lambdas_path}/auth/verifyAccessToken.js"
@@ -230,6 +238,51 @@ resource "aws_lambda_function" "api_authorizer" {
   }
 }
 
+resource "aws_lambda_function" "services" {
+  for_each = local.lambdas.services
+
+  function_name = each.value["name"]
+  handler       = "${each.key}.handler"
+  description   = each.value["description"]
+  role          = aws_iam_role.lambda_role.arn
+  runtime       = "nodejs16.x"
+
+  filename         = data.archive_file.services[each.key].output_path
+  source_code_hash = data.archive_file.services[each.key].output_base64sha256
+
+  timeout     = each.value["timeout"]
+  memory_size = each.value["memory"]
+
+  layers = [
+    aws_lambda_layer_version.mongodb.arn,
+    aws_lambda_layer_version.sentry.arn,
+    aws_lambda_layer_version.utils.arn,
+    aws_lambda_layer_version.zod.arn
+  ]
+
+  // Enabling CloudWatch X-Ray
+  tracing_config {
+    mode = "Active"
+  }
+
+  environment {
+    variables = {
+      DB_CONNECTION_URI         = local.db_connection_uri
+      DB_NAME                   = local.db_name
+      DEBUG                     = var.env == "dev"
+      SENTRY_ENABLED            = false
+      SENTRY_DSN                = ""
+      SENTRY_TRACES_SAMPLE_RATE = 0.1
+      SSM_PARAMETER_DB_USERNAME = local.ssm_parameters.mongodb_username
+      SSM_PARAMETER_DB_PASSWORD = local.ssm_parameters.mongodb_password
+    }
+  }
+
+  tags = {
+    project = var.service_name
+  }
+}
+
 resource "aws_lambda_function" "verify_access_token" {
   function_name = "${local.lambdas_prefix}VerifyAccessToken"
   handler       = "verifyAccessToken.handler"
@@ -263,7 +316,7 @@ resource "aws_lambda_function" "verify_access_token" {
   }
 }
 
-resource "aws_lambda_permission" "lambda_permission" {
+resource "aws_lambda_permission" "clients_lambda_permission" {
   for_each = local.lambdas.clients
 
   statement_id  = "InvokeFunctionToAPILambdas"
@@ -285,6 +338,16 @@ resource "aws_lambda_permission" "lambda_api_authorizer_permission" {
   statement_id  = "InvokeFunctionToAPILambdaAuthorizer"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api_authorizer.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
+}
+
+resource "aws_lambda_permission" "services_lambda_permission" {
+  for_each = local.lambdas.services
+
+  statement_id  = "InvokeFunctionToAPILambdas"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.services[each.key].function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }

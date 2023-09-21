@@ -42,6 +42,32 @@ locals {
         timeout     = 15
       }
     }
+    services : {
+      AddService = {
+        name        = "${local.lambdas_prefix}AddService"
+        description = "Add a new service"
+        memory      = 128
+        timeout     = 15
+      }
+      DeleteService = {
+        name        = "${local.lambdas_prefix}DeleteService"
+        description = "Soft delete a service"
+        memory      = 128
+        timeout     = 15
+      }
+      GetServices = {
+        name        = "${local.lambdas_prefix}GetServices"
+        description = "Get services"
+        memory      = 128
+        timeout     = 15
+      }
+      UpdateService = {
+        name        = "${local.lambdas_prefix}UpdateService"
+        description = "Update a service"
+        memory      = 128
+        timeout     = 15
+      }
+    }
   }
 
   ssm_parameters = {

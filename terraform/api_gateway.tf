@@ -171,6 +171,65 @@ resource "aws_api_gateway_rest_api" "api" {
           }
         }
       }
+      "/v1/services" = {
+        get = {
+          security = [{
+            authorizer = []
+          }]
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.services["GetServices"].invoke_arn
+          }
+        }
+        post = {
+          security = [{
+            authorizer = []
+          }]
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.services["AddService"].invoke_arn
+          }
+        }
+      }
+      "/v1/services/{id}" = {
+        delete = {
+          security = [{
+            authorizer = []
+          }]
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.services["DeleteService"].invoke_arn
+          }
+        }
+        get = {
+          security = [{
+            authorizer = []
+          }]
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.services["GetServices"].invoke_arn
+          },
+        }
+        put = {
+          security = [{
+            authorizer = []
+          }]
+          x-amazon-apigateway-integration = {
+            httpMethod           = "POST"
+            payloadFormatVersion = "1.0"
+            type                 = "AWS_PROXY"
+            uri                  = aws_lambda_function.services["UpdateService"].invoke_arn
+          }
+        }
+      }
       "/v1/verify-access-token" = {
         get = {
           security = [{

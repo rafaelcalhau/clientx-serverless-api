@@ -17,7 +17,7 @@ const tracesSampleRate = typeof SENTRY_TRACES_SAMPLE_RATE === 'string'
     ? Number(SENTRY_TRACES_SAMPLE_RATE)
     : 0;
 
-const handler = async (event, context) => {
+const handler = async (event) => {
     if (debugEnabled) console.log({ event });
 
     const { pathParameters, querystring } = normalizeEvent(event);
@@ -26,37 +26,37 @@ const handler = async (event, context) => {
 
     if (pathParameters?.id) {
         try {
-            const client = await mongoClient
-                .collection("clients")
+            const service = await mongoClient
+                .collection("services")
                 .findOne({ _id: new ObjectId(pathParameters.id) });
 
             if (debugEnabled) {
                 console.log({
-                    message: 'Client data has been fetched.',
-                    client,
+                    message: 'Service data has been fetched.',
+                    service,
                 });
             }
     
-            return response(200, client);
+            return response(200, service);
         } catch (err) {
             console.error(err);
             return response(500, {
-                message: 'Woops, something went wrong.'
+                message: 'Whoops, something went wrong.'
             });
         }
     } else {
         try {
-            const clients = await mongoClient
-                .collection("clients")
+            const services = await mongoClient
+                .collection("services")
                 .find({})
                 .toArray();
     
             console.log({
-                message: 'Clients has been fecthed.',
-                clients,
+                message: 'Services has been fecthed.',
+                services,
             });
     
-            return response(200, clients);
+            return response(200, services);
         } catch (err) {
             console.error(err);
             return response(500, {
