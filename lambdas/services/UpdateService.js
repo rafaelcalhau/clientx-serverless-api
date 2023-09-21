@@ -44,7 +44,7 @@ const handler = async (event, context) => {
                 { $set: { ...doc, updatedAt: new Date() } }
             )
         if (debugEnabled) {
-            console.log(`Registered service ${doc.name} with id ${id}.`)
+            console.log(`Update service ${doc.name} with id ${id}.`)
         }
         return response(200, { success: true, _id: id });
     } catch (error) {
