@@ -49,8 +49,7 @@ const handler = async (event, context) => {
         return response(200, { success: true, _id: id });
     } catch (error) {
         if (error instanceof ZodError) {
-            const message = error.issues.map(issue => issue.message)?.join('; ') ?? 'Data validation error.'
-            return response(500, { message });
+            return response(500, { error, message: 'Validation error.' });
         }
 
         return response(500, { message: error?.message ?? error });
