@@ -30,11 +30,15 @@ const handler = async (event, context) => {
                 .collection("clients")
                 .findOne({ _id: new ObjectId(pathParameters.id) });
 
-            if (debugEnabled) {
-                console.log({
-                    message: 'Client data has been fetched.',
-                    client,
-                });
+            if (!client) {
+                return response(404)
+            }
+
+            if (!Array.isArray(client.activeServices)) {
+                client.activeServices = []
+            }
+            if (!Array.isArray(client.pendingInvoices)) {
+                client.pendingInvoices = []
             }
     
             return response(200, client);
