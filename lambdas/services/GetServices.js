@@ -22,8 +22,8 @@ const handler = async (event) => {
 
     const { pathParameters, querystring } = normalizeEvent(event);
     if (debugEnabled) console.log({ pathParameters, querystring });
+    
     const mongoClient = await getMongoClient();
-
     if (pathParameters?.id) {
         try {
             const service = await mongoClient
@@ -45,18 +45,46 @@ const handler = async (event) => {
             });
         }
     } else {
+        const limit = Number(querystring?.limit ?? 25);
+        const page = Number(querystring?.page ?? 1);
+        const skip = limit * (page - 1)
+
         try {
-            const services = await mongoClient
+            const queryPipeline = [
+                {
+                  $facet: {
+                    services: [
+                      { $match: {} },
+                      { $skip: skip },
+                      { $limit: limit },
+                    ],
+                    totalServices: [
+                      { $count: "total" },
+                    ],
+                  },
+                },
+                {
+                  $unwind: "$totalServices",
+                },
+              ];
+
+            const [{ services, totalServices }] = await mongoClient
                 .collection("services")
-                .find({})
+                .aggregate(queryPipeline)
                 .toArray();
     
-            console.log({
-                message: 'Services has been fecthed.',
-                services,
-            });
+            if (debugEnabled) {
+                console.log({
+                    message: 'Services has been fecthed.',
+                    services,
+                    totalServices,
+                });
+            }
     
-            return response(200, services);
+            return response(200, {
+                data: services,
+                total: totalServices.total
+            });
         } catch (err) {
             console.error(err);
             return response(500, {
